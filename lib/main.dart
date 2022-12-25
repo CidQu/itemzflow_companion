@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:itemzflow_companion/models/inputFormatter.dart';
+import 'package:itemzflow_companion/models/ipAddres.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -75,11 +78,18 @@ class _MyHomePageState extends State<MyHomePage> {
           suffixIcon: ipAdress.text.isEmpty
               ? Container(width: 0)
               : IconButton(
-                  icon: Icon(Icons.save),
+                  icon: const Icon(Icons.save),
                   onPressed: () => _saveToStorage(ipAdress.text),
                 ),
           border: OutlineInputBorder(),
         ),
+        keyboardType: TextInputType.number,
         textInputAction: TextInputAction.done,
+        inputFormatters: [
+              MyInputFormatters.ipAddressInputFilter(),
+              LengthLimitingTextInputFormatter(15),
+              IpAddressInputFormatter()
+            ],
       );
 }
+
