@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ftpconnect/ftpconnect.dart';
 import 'package:itemzflow_companion/models/inputFormatter.dart';
 import 'package:itemzflow_companion/models/ipAddres.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 void main() {
   runApp(const MyApp());
@@ -44,21 +46,88 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  _saveToStorage(ip1) {
-    storage.setItem('ip', ip1);
+
+  _initiate() async{
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    if (connectivityResult == ConnectivityResult.mobile) {
+      Widget okButton = TextButton(
+        child: Text("OK"),
+        onPressed: () { },
+      );
+      AlertDialog alert = AlertDialog(
+        title: Text("FTP Connection"),
+        content: Text("Make sure you are using the same wifi as your PS4."),
+        actions: [
+          okButton,
+        ],
+      );
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return alert;
+        },
+      );
+    } else if (connectivityResult == ConnectivityResult.wifi) {
+      FTPConnect ftpConnect = FTPConnect(ipAdress.text);
+      try {
+        await ftpConnect.connect();
+      } catch (e) {
+        Widget okButton = TextButton(
+          child: Text("OK"),
+          onPressed: () { },
+        );
+        AlertDialog alert = AlertDialog(
+          title: Text("There is a problem!"),
+          content: Text("Check your connection, make sure Itemzflow is running and FTP is on"),
+          actions: [
+            okButton,
+          ],
+        );
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return alert;
+          },
+        );
+      }
+      await ftpConnect.disconnect();
+      storage.setItem('ip', ipAdress.text);
+      storage.setItem('done', 'tamam');
+    } else {
+      Widget okButton = TextButton(
+        child: Text("OK"),
+        onPressed: () { },
+      );
+      AlertDialog alert = AlertDialog(
+        title: Text("There is a problem!"),
+        content: Text("Check your connection or open issue on CidQu/itemzflow_companion"),
+        actions: [
+          okButton,
+        ],
+      );
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return alert;
+        },
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Text('Enter PS4 IP in order to use App.', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(height: 10,),
+            Text('Make sure Itemzflow is open.'),
+            SizedBox(height: 10,),
             buildEmail(),
+            SizedBox(height: 20,),
+            ElevatedButton(onPressed:() => {}, child: Text('Continue'))
           ],
         ),
       ),
@@ -75,12 +144,6 @@ class _MyHomePageState extends State<MyHomePage> {
           hintText: '192.168.1.1',
           labelText: 'PS4 Ip Address',
           prefixIcon: Icon(Icons.web),
-          suffixIcon: ipAdress.text.isEmpty
-              ? Container(width: 0)
-              : IconButton(
-                  icon: const Icon(Icons.save),
-                  onPressed: () => _saveToStorage(ipAdress.text),
-                ),
           border: OutlineInputBorder(),
         ),
         keyboardType: TextInputType.number,
